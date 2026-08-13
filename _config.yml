@@ -1,10 +1,10 @@
-title: Reil's CTF Notebook
+title: Riel's CTF Notebook
 description: >-
   Writeups, thought process, and lessons learned working through picoCTF
   and other CTF challenges — binary exploitation, forensics, cryptography,
   and whatever else comes up along the way.
 baseurl: "" # leave empty unless you use a project page like /ctf-blog
-url: "" # fill in after you know your github.io URL, e.g. "https://yourusername.github.io"
+url: "https://reilc.github.io/" # fill in after you know your github.io URL, e.g. "https://yourusername.github.io"
 
 theme: minima
 
@@ -13,7 +13,7 @@ theme: minima
 minima:
   skin: dark
   social_links:
-    - { platform: github, user_url: "https://github.com/yourusername" }
+    - { platform: github, user_url: "https://github.com/reilc" }
 
 # Organizes posts by category in the URL, e.g. /pwn/2026/08/12/title/
 permalink: /:categories/:year/:month/:day/:title/
