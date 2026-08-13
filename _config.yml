@@ -1,8 +1,6 @@
-title: Riel's CTF Notebook
+title: Riel's Notebook
 description: >-
-  Writeups, thought process, and lessons learned working through picoCTF
-  and other CTF challenges — binary exploitation, forensics, cryptography,
-  and whatever else comes up along the way.
+  blog website where i post notes, writeups, and what i've learned from doing things (mainly CTFs).
 baseurl: "" # leave empty unless you use a project page like /ctf-blog
 url: "https://reilc.github.io/" # fill in after you know your github.io URL, e.g. "https://yourusername.github.io"
 
