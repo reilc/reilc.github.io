@@ -41,3 +41,15 @@ footer {
 .writeup-list h2 {
     margin-bottom: 8px;
 }
+
+.writeup {
+    max-width: 750px;
+}
+
+.writeup h1 {
+    margin-bottom: 10px;
+}
+
+.writeup p {
+    line-height: 1.6;
+}
