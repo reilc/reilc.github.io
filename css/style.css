@@ -28,3 +28,16 @@ main {
 footer {
     padding: 30px 0;
 }
+
+.writeup-list {
+    margin-top: 50px;
+}
+
+.writeup-list article {
+    padding: 20px 0;
+    border-bottom: 1px solid #ccc;
+}
+
+.writeup-list h2 {
+    margin-bottom: 8px;
+}
