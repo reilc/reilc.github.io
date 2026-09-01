@@ -1,15 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!--
+        Basic page setup.
+        You can copy this <head> section almost unchanged for future writeups.
+    -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Change the challenge name for each writeup -->
     <title>Picker II | reilc</title>
 
+    <!--
+        The ../ means:
+        go UP from the /writeups folder to the root folder,
+        then enter /css and find style.css.
+
+        writeups/picker-ii.html
+                    ↓ ../
+        css/style.css
+    -->
     <link rel="stylesheet" href="../css/style.css">
 </head>
 
 <body>
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <!--
+        Because this HTML file is inside /writeups,
+        the navigation links also need ../ to return
+        to the root of the website.
+    -->
     <header>
         <nav>
             <a href="../index.html">reilc</a>
@@ -19,24 +40,381 @@
         </nav>
     </header>
 
+
+    <!-- ==================== MAIN CONTENT ==================== -->
     <main>
+
+        <!--
+            <article> is appropriate here because the entire
+            writeup is one self-contained piece of content.
+
+            class="writeup" lets us specifically style writeup
+            pages from style.css.
+        -->
         <article class="writeup">
+
+            <!-- Link back to the main writeup listing -->
             <p>
                 <a href="../writeups.html">&larr; Back to writeups</a>
             </p>
 
+
+            <!-- ==================== TITLE ==================== -->
+
             <h1>Picker II</h1>
 
-            <p>August 17, 2026</p>
+            <!--
+                Short metadata underneath the title.
+                You can change these values for each challenge.
+            -->
+            <p class="writeup-meta">
+                picoCTF • Reverse Engineering • Medium
+            </p>
+
+
+            <!-- ==================== CHALLENGE INFO ==================== -->
+
+            <h2>Challenge Info</h2>
+
+            <!--
+                Use <ul> for information where order does not matter.
+
+                <strong> makes the labels visually important.
+            -->
+            <ul>
+                <li><strong>Platform:</strong> picoCTF</li>
+                <li><strong>Category:</strong> Reverse Engineering</li>
+                <li><strong>Difficulty:</strong> Medium</li>
+                <li><strong>Points:</strong> -</li>
+                <li>
+                    <strong>Tools used:</strong>
+                    VS Code (for viewing source code), GDB
+                </li>
+            </ul>
+
+
+            <!-- ==================== GOAL ==================== -->
+
+            <h2>Goal</h2>
 
             <p>
-                Put your Picker II writeup content here.
+                Print out the value of the flag.
             </p>
+
+            <p>
+                The relevant logic from the challenge is:
+            </p>
+
+            <!--
+                Use <pre><code> for multi-line code.
+
+                <pre> preserves spaces and line breaks.
+                <code> identifies the contents as source code.
+
+                IMPORTANT:
+                Some characters have special meanings in HTML.
+                For example:
+                    > becomes &gt;
+                    < becomes &lt;
+                    & becomes &amp;
+
+                Most Python code won't need much conversion,
+                but keep this in mind when copying code.
+            -->
+            <pre><code>def win():
+  flag = open('flag.txt', 'r').read()
+  flag = flag.strip()
+  str_flag = ''
+  for c in flag:
+    str_flag += str(hex(ord(c))) + ' '
+  print(str_flag)
+
+def filter(user_input):
+  if 'win' in user_input:
+    return False
+  return True
+
+while(True):
+  try:
+    user_input = input('==&gt; ')
+    if( filter(user_input) ):
+      eval(user_input + '()')
+    else:
+      print('Illegal input')
+  except Exception as e:
+    print(e)
+    break</code></pre>
+
+
+            <!-- ==================== ATTEMPTS ==================== -->
+
+            <h2>Attempts</h2>
+
+            <!--
+                h3 is useful for subsections inside an h2 section.
+
+                Page hierarchy:
+                    h1 = writeup title
+                    h2 = major section
+                    h3 = subsection
+            -->
+            <h3>First Attempt</h3>
+
+            <p>
+                Seeing that I was able to provide my own input, I wanted
+                to call the <code>win</code> function without literally
+                typing in <code>win</code> since it'll get filtered out.
+            </p>
+
+            <p>
+                I tried using the following variations, all of which are
+                different encodings of the string <code>win</code>:
+            </p>
+
+            <!--
+                Use <ul> when listing attempts because there isn't
+                necessarily a meaningful order to them.
+            -->
+            <ul>
+                <li><code>\x77\x69\x6e</code></li>
+                <li><code>0x77 0x69 0x6e</code></li>
+                <li>
+                    <code>bytes.fromhex('77696e').decode('utf-8')</code>
+                </li>
+            </ul>
+
+            <p>
+                However, they all returned:
+            </p>
+
+            <!--
+                For a small piece of output you could use inline <code>,
+                but <pre><code> makes terminal/error output stand out.
+            -->
+            <pre><code>'str' object is not callable</code></pre>
+
+            <p>
+                After reasoning about why I kept getting the same error,
+                it turns out that after the encodings are parsed, the
+                <code>eval()</code> function sees:
+            </p>
+
+            <pre><code>'win'()</code></pre>
+
+            <p>
+                So it looks as though it's trying to call a string instead
+                of a function.
+            </p>
+
+            <p>
+                While I was able to get <code>win</code> past the filter,
+                I ended up with the string object, not the function.
+            </p>
+
+
+            <!-- ==================== SOLUTION ==================== -->
+
+            <h2>Solution</h2>
+
+            <p>
+                After taking time to learn more about Python and functions,
+                I eventually stumbled upon <code>globals()</code> and how
+                it could be used in this context.
+            </p>
+
+            <p>
+                Since <code>globals()</code> is a dictionary mapping every
+                name in the global namespace, which includes
+                <code>win</code>, we're able to access and call the
+                <code>win()</code> function through <code>globals()</code>.
+            </p>
+
+            <p>
+                But first, I had to figure out where in
+                <code>globals()</code> <code>win</code> was. That way I
+                could access it directly since <code>globals()</code>
+                returns a dictionary data structure.
+            </p>
+
+            <p>
+                Using the program, I was able to do:
+            </p>
+
+            <pre><code>print(globals())</code></pre>
+
+            <p>
+                By doing this, I noticed:
+            </p>
+
+            <pre><code>'win': &lt;function win at 0x733395e6b040&gt;</code></pre>
+
+            <!--
+                Notice the &lt; and &gt; above.
+
+                If we wrote:
+                    <function win ...>
+                directly into HTML, the browser may interpret it
+                as an HTML tag.
+
+                &lt; displays <
+                &gt; displays >
+            -->
+
+            <p>
+                I counted its index, which I double-checked was correct by
+                doing:
+            </p>
+
+            <pre><code>print(list(globals().keys())[13])</code></pre>
+
+            <p>
+                This returned:
+            </p>
+
+            <pre><code>win</code></pre>
+
+            <p>
+                Now that I was accessing <code>win</code> through
+                <code>globals()</code>, I entered:
+            </p>
+
+            <pre><code>list(globals().keys())[13]</code></pre>
+
+            <p>
+                However, this once again gave me the
+                <code>'str' object is not callable</code> error from
+                before.
+            </p>
+
+            <p>
+                After learning from my previous attempt, I knew I was
+                making the same mistake. <code>eval()</code> was once
+                again seeing:
+            </p>
+
+            <pre><code>'win'()</code></pre>
+
+            <p>
+                After some thinking, I noticed that the entry from before:
+            </p>
+
+            <pre><code>'win': &lt;function win at 0x733395e6b040&gt;</code></pre>
+
+            <p>
+                also included a value: the actual function that
+                <code>win</code> points to.
+            </p>
+
+            <p>
+                So instead of entering:
+            </p>
+
+            <pre><code>list(globals().keys())[13]</code></pre>
+
+            <p>
+                I entered:
+            </p>
+
+            <pre><code>list(globals().values())[13]</code></pre>
+
+            <p>
+                and got back a bunch of hex:
+            </p>
+
+            <pre><code>0x70 0x69 0x63 0x6f 0x43 0x54 0x46 0x7b 0x66 0x31
+0x6c 0x37 0x33 0x72 0x35 0x5f 0x66 0x34 0x31 0x6c
+0x5f 0x63 0x30 0x64 0x33 0x5f 0x72 0x33 0x66 0x34
+0x63 0x37 0x30 0x72 0x5f 0x6d 0x31 0x67 0x68 0x37
+0x5f 0x35 0x75 0x63 0x63 0x33 0x33 0x64 0x5f 0x30
+0x62 0x35 0x66 0x31 0x31 0x33 0x31 0x7d</code></pre>
+
+            <p>
+                This proved that the <code>win()</code> function was
+                called since printing out hex is what the function
+                eventually does.
+            </p>
+
+            <p>
+                From here, I decoded the hex using CyberChef and got the
+                flag.
+            </p>
+
+
+            <!-- ==================== FLAG ==================== -->
+
+            <h3>Flag</h3>
+
+            <!--
+                <details> creates a collapsible section without JavaScript.
+
+                This is especially useful for CTF flags so readers
+                aren't immediately spoiled.
+            -->
+            <details>
+                <summary>Click to reveal flag</summary>
+
+                <p>
+                    <code>
+                        picoCTF{f1l73r5_f41l_c0d3_r3f4c70r_m1gh7_5ucc33d_0b5f1131}
+                    </code>
+                </p>
+            </details>
+
+
+            <!-- ==================== AFTERTHOUGHTS ==================== -->
+
+            <h2>Afterthoughts</h2>
+
+            <p>
+                The solution from picoCTF was much more straightforward
+                and less complicated than the approach I took.
+            </p>
+
+            <p>
+                Their exploit was:
+            </p>
+
+            <pre><code>print(open('flag.txt', 'r').read())#</code></pre>
+
+            <p>
+                which makes a whole lot of sense considering the hint
+                they gave:
+            </p>
+
+            <!--
+                blockquote is useful when quoting a challenge hint,
+                documentation, another person, etc.
+            -->
+            <blockquote>
+                Can you do what <code>win</code> does with your input
+                to the program?
+            </blockquote>
+
+            <p>
+                After seeing the solution, I'm taken back by how simple
+                the problem should've been. I feel like I made it a lot
+                harder than it should've, but all's well that ends well,
+                I guess...
+            </p>
+
+            <p>
+                I really wish I tinkered around more and thought about
+                entering Python, especially after I learned about what
+                <code>eval</code> does.
+            </p>
+
         </article>
     </main>
 
+
+    <!-- ==================== FOOTER ==================== -->
+
+    <!--
+        This can stay basically identical on every page.
+    -->
     <footer>
         <p>&copy; 2026 reilc</p>
     </footer>
+
 </body>
 </html>
