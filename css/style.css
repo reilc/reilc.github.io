@@ -53,3 +53,43 @@ footer {
 .writeup p {
     line-height: 1.6;
 }
+
+.writeup {
+    max-width: 760px;
+}
+
+.writeup h1 {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+}
+
+.writeup h2 {
+    margin-top: 40px;
+}
+
+.writeup p,
+.writeup li {
+    line-height: 1.7;
+}
+
+.writeup-meta {
+    color: #666;
+    margin-bottom: 40px;
+}
+
+pre {
+    overflow-x: auto;
+    padding: 16px;
+    background-color: #f4f4f4;
+    border-radius: 6px;
+}
+
+code {
+    font-family: monospace;
+}
+
+blockquote {
+    margin: 24px 0;
+    padding-left: 16px;
+    border-left: 3px solid #ccc;
+}
