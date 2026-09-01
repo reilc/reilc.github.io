@@ -4,29 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Change the challenge name for each writeup -->
     <title>Buffer Overflow 1 | reilc</title>
 
-    <!--
-        The ../ means:
-        go UP from the /writeups folder to the root folder,
-        then enter /css and find style.css.
-
-        writeups/picker-ii.html
-                    ↓ ../
-        css/style.css
-    -->
     <link rel="stylesheet" href="../css/style.css">
 </head>
 
 <body>
 
     <!-- ==================== NAVIGATION ==================== -->
-    <!--
-        Because this HTML file is inside /writeups,
-        the navigation links also need ../ to return
-        to the root of the website.
-    -->
+
     <header>
         <nav>
             <a href="../index.html">reilc</a>
@@ -40,16 +26,8 @@
     <!-- ==================== MAIN CONTENT ==================== -->
     <main>
 
-        <!--
-            <article> is appropriate here because the entire
-            writeup is one self-contained piece of content.
-
-            class="writeup" lets us specifically style writeup
-            pages from style.css.
-        -->
         <article class="writeup">
 
-            <!-- Link back to the main writeup listing -->
             <p>
                 <a href="../writeups.html">&larr; Back to writeups</a>
             </p>
@@ -59,10 +37,6 @@
 
             <h1>Buffer Overflow 1</h1>
 
-            <!--
-                Short metadata underneath the title.
-                You can change these values for each challenge.
-            -->
             <p class="writeup-meta">
                 picoCTF • Binary Exploitation • Medium
             </p>
@@ -72,11 +46,6 @@
 
             <h2>Challenge Info</h2>
 
-            <!--
-                Use <ul> for information where order does not matter.
-
-                <strong> makes the labels visually important.
-            -->
             <ul>
                 <li><strong>Platform:</strong> picoCTF</li>
                 <li><strong>Category:</strong> Binary Exploitation</li>
@@ -101,69 +70,47 @@
                 The relevant logic from the challenge is:
             </p>
 
-            <!--
-                Use <pre><code> for multi-line code.
+            <pre><code>
+                #define BUFSIZE 32
+                #define FLAGSIZE 64
 
-                <pre> preserves spaces and line breaks.
-                <code> identifies the contents as source code.
-
-                IMPORTANT:
-                Some characters have special meanings in HTML.
-                For example:
-                    > becomes &gt;
-                    < becomes &lt;
-                    & becomes &amp;
-
-                Most Python code won't need much conversion,
-                but keep this in mind when copying code.
-            -->
-            <pre><code>#define BUFSIZE 32
-#define FLAGSIZE 64
-
-void win() {
-	char buf[FLAGSIZE];
-	FILE *f = fopen("flag.txt","r");
-	if (f == NULL) {
-		printf("%s %s", "Please create 'flag.txt' in this directory with your",
-			   "own debugging flag.\n");
+                void win() {
+	                char buf[FLAGSIZE];
+	                FILE *f = fopen("flag.txt","r");
+	                if (f == NULL) {
+		                printf("%s %s", "Please create 'flag.txt' in this directory with your",
+			                "own debugging flag.\n");
 			   
-		exit(0);
-	}
+		                exit(0);
+	                }
 
-	fgets(buf,FLAGSIZE,f);
-	printf(buf);
-}
+	                fgets(buf,FLAGSIZE,f);
+	                printf(buf);
+                }
 
-void vuln(){
-	char buf[BUFSIZE];
-	gets(buf);
-	printf("Okay, time to return... Fingers Crossed... Jumping to 0x%x\n", get_return_address());
-}
+                void vuln(){
+	                char buf[BUFSIZE];
+	                gets(buf);
+	                printf("Okay, time to return... Fingers Crossed... Jumping to 0x%x\n", get_return_address());
+                }
 
-int main(int argc, char **argv){
-	setvbuf(stdout, NULL, _IONBF, 0);
+                int main(int argc, char **argv){
+                	setvbuf(stdout, NULL, _IONBF, 0);
 	
-	gid_t gid = getegid();
-	setresgid(gid, gid, gid);
+	                gid_t gid = getegid();
+	                setresgid(gid, gid, gid);
 	
-	puts("Please enter your string: ");
-	vuln();
-	return 0;
-}</code></pre>
+                	puts("Please enter your string: ");
+                	vuln();
+	                return 0;
+                }
+            </code></pre>
 
 
             <!-- ==================== ATTEMPTS ==================== -->
 
             <h2>Attempts</h2>
 
-            <!--
-                h3 is useful for subsections inside an h2 section.
-
-                Page hierarchy:
-                    h1 = writeup title
-                    h2 = major section
-                    h3 = subsection
-            -->
             <h3>First Attempt</h3>
 
             <p>
@@ -268,12 +215,6 @@ int main(int argc, char **argv){
 
             <h3>Flag</h3>
 
-            <!--
-                <details> creates a collapsible section without JavaScript.
-
-                This is especially useful for CTF flags so readers
-                aren't immediately spoiled.
-            -->
             <details>
                 <summary>Click to reveal flag</summary>
 
@@ -316,9 +257,6 @@ int main(int argc, char **argv){
 
     <!-- ==================== FOOTER ==================== -->
 
-    <!--
-        This can stay basically identical on every page.
-    -->
     <footer>
         <p>&copy; 2026 reilc</p>
     </footer>
