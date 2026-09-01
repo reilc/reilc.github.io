@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Local Target | reilc</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <!-- ==================== NAVIGATION ==================== -->
+
+    <header>
+        <nav>
+            <a href="../index.html">reilc</a>
+            <a href="../about.html">about</a>
+            <a href="../projects.html">projects</a>
+            <a href="../writeups.html">writeups</a>
+        </nav>
+    </header>
+
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main>
+
+        <article class="writeup">
+
+            <p>
+                <a href="../writeups.html">&larr; Back to writeups</a>
+            </p>
+
+
+            <!-- ==================== TITLE ==================== -->
+
+            <h1>Local Target</h1>
+
+            <p class="writeup-meta">
+                picoCTF • Reverse Engineering • Medium
+            </p>
+
+
+            <!-- ==================== CHALLENGE INFO ==================== -->
+
+            <h2>Challenge Info</h2>
+
+            <ul>
+                <li><strong>Platform:</strong> picoCTF</li>
+                <li><strong>Category:</strong> Reverse Engineering</li>
+                <li><strong>Difficulty:</strong> Medium</li>
+                <li><strong>Points:</strong> -</li>
+                <li>
+                    <strong>Tools used:</strong>
+                    VS Code (for viewing source code), GDB
+                </li>
+            </ul>
+
+
+            <!-- ==================== GOAL ==================== -->
+
+            <h2>Goal</h2>
+
+            <p>
+                Get the following program to print out the flag by overflowing
+                the buffer to overwrite a local variable, <code>num</code>. By
+                assigning <code>num</code> the value, 65, a conditional check is
+                passed and the flag is printed out.
+            </p>
+
+            <p>
+                The relevant logic from the challenge is:
+            </p>
+
+            <pre><code>
+                int main() {
+	            FILE *fptr;
+	            char c;
+
+	            char input[16];
+	            int num = 64;
+	            printf("Enter a string: ");
+	            fflush(stdout);
+	            gets(input);
+	            printf("\n");
+	            printf("num is %d\n", num);
+	            fflush(stdout);
+
+	            if( num == 65 ) {
+		            printf("You win!\n");
+		            fflush(stdout);
+
+		            // Open file
+		            fptr = fopen("flag.txt", "r");
+		            if (fptr == NULL) {
+			            printf("Cannot open file.\n");
+			            fflush(stdout);
+			            exit(0);
+		            }
+
+		            // Read contents from file
+		            c = fgetc(fptr);
+		            while (c != EOF) {
+			            printf ("%c", c);
+			            c = fgetc(fptr);
+		            }
+
+		            fflush(stdout);
+		            printf("\n");
+		            fflush(stdout);
+		            fclose(fptr);
+		            exit(0);
+	            }
+
+	            printf("Bye!\n");
+	            fflush(stdout);
+                }
+            </code></pre>
+
+
+            <!-- ==================== SOLUTION ==================== -->
+
+            <h2>Approach -> Solution</h2>
+
+            <p>
+                From viewing the source code, I saw that my input went into
+                <code>input</code>- a <code>char</code> array. I know it holds
+                16 bytes because a <code>char</code> is one byte in C. <code>gets</code>
+                is an unsafe C function because it doesn't check how many bytes
+                it writes into memory. So, if my input is long enough, I could
+                overwrite memory addresses I shouldn't be able to. For this
+                problem, I want to overwrite <code>num</code> to change its value.
+            </p>
+
+            <p>
+                To go about changing the value of <code>num</code>, I first
+                had to find where <code>num</code> is in memory. Fortunately,
+                this wasn't too difficult to find. By running the program in
+                GDB and looking at the disassembly of the <code>main</code>
+                function, I could clearly see where <code>num</code> was being
+                assigned:
+            </p>
+
+            <pre><code>
+                0x0000000000401242 <+12>:    mov    DWORD PTR [rbp-0x8],0x40
+            </code></pre>
+
+            <p>
+                I knew this was <code>num</code> because the value <code>0x40</code>,
+                which is hexadecimal for the number, 64, is being assigned to
+                some address below <code>rbp</code> (base pointer register).
+                Now that I knew which address to reach, which was
+                <code>0x7fff03164b78</code>, I had to now find out where my
+                input starts from so I can build my attack string.
+            </p>
+
+            <p>
+                In the C source code for the program, I saw that
+                <code>input</code> is declared and assigned before
+                <code>num</code>, so I figured that my input would start at
+                at some address lower than <code>0x7fff03164b78</code>. Since
+                <code>input</code> is 16 bytes in size, I subtracted
+                <code>0x7fff03164b78</code> by <code>0x10</code> (the hex
+                representation of 16) and examined the bytes there. I noticed
+                an area of <code>0x00</code> bytes which seemed to belong to
+                <code>input</code>.
+            </p>
+
+            <p>
+                I took the address of where the <code>0x00</code> bytes started
+                and reran GDB with an input of 16 A's. I reexamined the address
+                and noticed that the <code>0x00</code> bytes were now 
+                <code>0x41</code> bytes, showing me exactly the memory area of
+                <code>input</code> (<code>0x41 is hexadecimal for A</code>).
+                With this, I could now work on my attack string.
+            </p>
+
+            <p>
+                Using a hex calculator I found that the distance from
+                <code>num</code> to <code>input</code> was 24 bytes. This
+                meant that my string would be 25 characters long- 24 characters
+                to reach <code>num</code> and the last character being the
+                value I want <code>num</code> to be. To get the flag,
+                <code>num</code> had to be 65 (decimal value). Coincidentally
+                (or maybe intentionally according to the challenge author),
+                the hexadecimal for 65 is <code>0x41</code> which as I saw
+                earlier is the same representation for the character 'A'. This
+                meant that my attack string could be 25 A's (or any
+                combination of letters really, as long as 'A' is the last).
+            </p>
+
+            <p>
+                I entered my string in the progam and got back the flag.
+            </p>
+
+
+            <!-- ==================== FLAG ==================== -->
+
+            <h3>Flag</h3>
+
+            <details>
+                <summary>Click to reveal flag</summary>
+
+                <p>
+                    <code>
+                        picoCTF{l0c4l5_1n_5c0p3_fee8ef05}
+                    </code>
+                </p>
+            </details>
+
+
+            <!-- ==================== AFTERTHOUGHTS ==================== -->
+
+            <h2>Afterthoughts</h2>
+
+            <p>
+                I thought my solution was good until I later noticed that the
+                <code>rsp</code> register (at some point in the program)
+                contained the same address as where <code>input</code> starts.
+                When I looked back at my notes on registers, this made sense
+                because (according to my notes from the picoCTF primer):
+                <code>rsp</code> "Shows where the top of the stack is. Creating
+                a local variable moves this pointer so that it can make space
+                for it. For example, creating an int variable that takes 4
+                bytes moves the stack pointer 4 bytes."
+            </p>
+
+            <p>
+                So if I had remembered how <code>rsp</code> behaves, I could've
+                saved myself some time and brain power. But at least now, going
+                forward, I can be more aware of that fact in future CTFs.
+            </p>
+
+        </article>
+    </main>
+
+
+    <!-- ==================== FOOTER ==================== -->
+
+    <!--
+        This can stay basically identical on every page.
+    -->
+    <footer>
+        <p>&copy; 2026 reilc</p>
+    </footer>
+
+</body>
+</html>
