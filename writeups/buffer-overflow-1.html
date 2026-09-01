@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Change the challenge name for each writeup -->
+    <title>Buffer Overflow 1 | reilc</title>
+
+    <!--
+        The ../ means:
+        go UP from the /writeups folder to the root folder,
+        then enter /css and find style.css.
+
+        writeups/picker-ii.html
+                    ↓ ../
+        css/style.css
+    -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <!--
+        Because this HTML file is inside /writeups,
+        the navigation links also need ../ to return
+        to the root of the website.
+    -->
+    <header>
+        <nav>
+            <a href="../index.html">reilc</a>
+            <a href="../about.html">about</a>
+            <a href="../projects.html">projects</a>
+            <a href="../writeups.html">writeups</a>
+        </nav>
+    </header>
+
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main>
+
+        <!--
+            <article> is appropriate here because the entire
+            writeup is one self-contained piece of content.
+
+            class="writeup" lets us specifically style writeup
+            pages from style.css.
+        -->
+        <article class="writeup">
+
+            <!-- Link back to the main writeup listing -->
+            <p>
+                <a href="../writeups.html">&larr; Back to writeups</a>
+            </p>
+
+
+            <!-- ==================== TITLE ==================== -->
+
+            <h1>Buffer Overflow 1</h1>
+
+            <!--
+                Short metadata underneath the title.
+                You can change these values for each challenge.
+            -->
+            <p class="writeup-meta">
+                picoCTF • Binary Exploitation • Medium
+            </p>
+
+
+            <!-- ==================== CHALLENGE INFO ==================== -->
+
+            <h2>Challenge Info</h2>
+
+            <!--
+                Use <ul> for information where order does not matter.
+
+                <strong> makes the labels visually important.
+            -->
+            <ul>
+                <li><strong>Platform:</strong> picoCTF</li>
+                <li><strong>Category:</strong> Binary Exploitation</li>
+                <li><strong>Difficulty:</strong> Medium</li>
+                <li><strong>Points:</strong> -</li>
+                <li>
+                    <strong>Tools used:</strong>
+                    VS Code (for viewing source code), GDB
+                </li>
+            </ul>
+
+
+            <!-- ==================== GOAL ==================== -->
+
+            <h2>Goal</h2>
+
+            <p>
+                overflow <code>buf</code> with an exploit string so that the <code>vuln</code> function gets called
+            </p>
+
+            <p>
+                The relevant logic from the challenge is:
+            </p>
+
+            <!--
+                Use <pre><code> for multi-line code.
+
+                <pre> preserves spaces and line breaks.
+                <code> identifies the contents as source code.
+
+                IMPORTANT:
+                Some characters have special meanings in HTML.
+                For example:
+                    > becomes &gt;
+                    < becomes &lt;
+                    & becomes &amp;
+
+                Most Python code won't need much conversion,
+                but keep this in mind when copying code.
+            -->
+            <pre><code>#define BUFSIZE 32
+#define FLAGSIZE 64
+
+void win() {
+	char buf[FLAGSIZE];
+	FILE *f = fopen("flag.txt","r");
+	if (f == NULL) {
+		printf("%s %s", "Please create 'flag.txt' in this directory with your",
+			   "own debugging flag.\n");
+			   
+		exit(0);
+	}
+
+	fgets(buf,FLAGSIZE,f);
+	printf(buf);
+}
+
+void vuln(){
+	char buf[BUFSIZE];
+	gets(buf);
+	printf("Okay, time to return... Fingers Crossed... Jumping to 0x%x\n", get_return_address());
+}
+
+int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IONBF, 0);
+	
+	gid_t gid = getegid();
+	setresgid(gid, gid, gid);
+	
+	puts("Please enter your string: ");
+	vuln();
+	return 0;
+}</code></pre>
+
+
+            <!-- ==================== ATTEMPTS ==================== -->
+
+            <h2>Attempts</h2>
+
+            <!--
+                h3 is useful for subsections inside an h2 section.
+
+                Page hierarchy:
+                    h1 = writeup title
+                    h2 = major section
+                    h3 = subsection
+            -->
+            <h3>First Attempt</h3>
+
+            <p>
+                I wanted to find out what <code>get_return_address</code> is
+                as it might be a clue as to how we can call <code>win</code>.
+                After looking it up online, I learned that it's a custom
+                function that reports the address that the CPU will jump to
+                when the current function executes <code>ret</code> or returns
+                instruction back to the caller function.
+            </p>
+
+            <p>
+                From here, my next step was to try overwriting the address
+                held at that function to be the address of <code>win</code>.
+                That meant that I'd also have to find the address of <code>buf</code>
+                which was too difficult. Thus, I went to try a different angle.
+            </p>
+
+            <h3>Second Attempt</h3>
+
+            <p>
+                After looking at the hints, I learned that I needed to change
+                <code>vuln</code>'s return address to be <code>win</code>'s
+                address.
+            </p>
+
+            <p>
+                I started by finding <code>win</code>'s address by going into
+                GDB and creating a breakpoint, giving me <code>0x80491fe</code>.
+                Next, I thought about how to create the exploit string. I knew
+                <code>buf</code> was 32 bytes, but I still had to find out where
+                it started so that I could take into account where saved ebp
+                and the return address were.
+            </p>
+
+            <p>
+                After meticulous GDB work, I finally found that <code>buf</code>
+                started at <code>0xfff821c0</code>. From there, I used GDB to
+                examine the segment of memory starting from the buffer to the
+                return address. I noticed that after the buffer, there was an
+                8 byte gap until saved ebp (which itself is 4 bytes). The
+                next 4 bytes after saved ebp was the return address, which is
+                also 4 bytes. So, taking all of this into account, my attack
+                string needed to be 48 bytes long (<code>32 + 8 + 4 + 4</code>),
+                with the last 4 bytes being the address of <code>win</code>.
+            </p>
+
+            <p>
+                I created my exploit string, which consisted of 44 A's followed
+                by the target address written in reverse, since this is in
+                little endian. I entered my string into the program and,
+                unfortunately, got a segmentation fault back.
+            </p>
+
+
+            <!-- ==================== SOLUTION ==================== -->
+
+            <h2>Solution</h2>
+
+            <p>
+                The solution picks up on where my second attempt leaves off.
+                The issue was that the address I found for <code>win</code>
+                was incorrect, as using breakpoints to find an address isn't
+                exactly the right way to do this.
+            </p>
+
+            <p>
+                Instead, the correct way would've been to use <code>print win</code>
+                or <code>disas win</code> and either read the return value or
+                read the very beginning of the disassembly. As it turns out,
+                <code>win</code>'s actual address was <code>0x084091f6</code>,
+                a few bytes before the previous address I found.
+            </p>
+
+            <p>
+                The segmentation fault occurred because the CPU was executing
+                intstructions without <code>win</code>'s frame being established
+                beforehand. So when <code>win</code> does its <code>ebp</code>
+                relative stack addresses, it does them in the wrong area of memory.
+            </p>
+
+            <p>
+                The reason why creating a breakpoint at <code>win</code> gave
+                a different address was because GDB uses "prologue skipping",
+                meaning it analyzes the function's opening instructions
+                (<code>push ebp, mov ebp, esp, etc...</code>), recognizes them
+                as boilerplate setup, and places the breakpoint right after it
+                because after the setup is where the function's "real logic"
+                begins.
+            </p>
+
+            <pre><code>
+                0x080491f6 <+0>:    endbr32
+                0x080491fa <+4>:    push   ebp
+                0x080491fb <+5>:    mov    ebp,esp
+                0x080491fd <+7>:    push   ebx
+                0x080491fe <+8>:    sub    esp,0x54      ← b win landed here
+            </code></pre>
+
+
+            <!-- ==================== FLAG ==================== -->
+
+            <h3>Flag</h3>
+
+            <!--
+                <details> creates a collapsible section without JavaScript.
+
+                This is especially useful for CTF flags so readers
+                aren't immediately spoiled.
+            -->
+            <details>
+                <summary>Click to reveal flag</summary>
+
+                <p>
+                    <code>
+                        picoCTF{addr3ss3s_ar3_3asy_6462ca2d}
+                    </code>
+                </p>
+            </details>
+
+
+            <!-- ==================== AFTERTHOUGHTS ==================== -->
+
+            <h2>Afterthoughts</h2>
+
+            <p>
+                I feel silly for blindly believing that i had the right address
+                even after seeing that the disassembly didn't quite match up. To
+                be honest, I didn't think the addresses before <code>0x080491fe</code>
+                really mattered too much (I was too focused on determining if
+                my exploit string was wrong or if I forgot to take another
+                factor into account) so I paid no attention to them. I did
+                have a hunch that the address I was using should've been 
+                <code>0x080491f6</code>, but I didn't take that hunch seriously.
+                I guess that goes to show that trusting your gut can help and
+                that trying something for the sake of trying it doesn't hurt
+                (especially for a problem like this).
+            </p>
+
+            <p>
+                fortunately, i had already done most of the heavy lifting with
+                finding where my buffer began and writing my exploit string, so
+                fixing up the address wasn't too bad. still is frustrating
+                being so close to the answer and not realizing it until late.
+            </p>
+
+        </article>
+    </main>
+
+
+    <!-- ==================== FOOTER ==================== -->
+
+    <!--
+        This can stay basically identical on every page.
+    -->
+    <footer>
+        <p>&copy; 2026 reilc</p>
+    </footer>
+
+</body>
+</html>
