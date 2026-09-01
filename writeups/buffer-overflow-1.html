@@ -71,39 +71,39 @@
             </p>
 
             <pre><code>
-                #define BUFSIZE 32
-                #define FLAGSIZE 64
+#define BUFSIZE 32
+#define FLAGSIZE 64
 
-                void win() {
-	                char buf[FLAGSIZE];
-	                FILE *f = fopen("flag.txt","r");
-	                if (f == NULL) {
-		                printf("%s %s", "Please create 'flag.txt' in this directory with your",
-			                "own debugging flag.\n");
+void win() {
+    char buf[FLAGSIZE];
+	FILE *f = fopen("flag.txt","r");
+	if (f == NULL) {
+		printf("%s %s", "Please create 'flag.txt' in this directory with your",
+			"own debugging flag.\n");
 			   
-		                exit(0);
-	                }
+		exit(0);
+	}
 
-	                fgets(buf,FLAGSIZE,f);
-	                printf(buf);
-                }
+	fgets(buf,FLAGSIZE,f);
+	printf(buf);
+}
 
-                void vuln(){
-	                char buf[BUFSIZE];
-	                gets(buf);
-	                printf("Okay, time to return... Fingers Crossed... Jumping to 0x%x\n", get_return_address());
-                }
+void vuln(){
+	char buf[BUFSIZE];
+    gets(buf);
+	printf("Okay, time to return... Fingers Crossed... Jumping to 0x%x\n", get_return_address());
+}
 
-                int main(int argc, char **argv){
-                	setvbuf(stdout, NULL, _IONBF, 0);
+int main(int argc, char **argv){
+    setvbuf(stdout, NULL, _IONBF, 0);
 	
-	                gid_t gid = getegid();
-	                setresgid(gid, gid, gid);
+	gid_t gid = getegid();
+	setresgid(gid, gid, gid);
 	
-                	puts("Please enter your string: ");
-                	vuln();
-	                return 0;
-                }
+    puts("Please enter your string: ");
+    vuln();
+	return 0;
+}
             </code></pre>
 
 
@@ -203,11 +203,11 @@
             </p>
 
             <pre><code>
-                0x080491f6 <+0>:    endbr32
-                0x080491fa <+4>:    push   ebp
-                0x080491fb <+5>:    mov    ebp,esp
-                0x080491fd <+7>:    push   ebx
-                0x080491fe <+8>:    sub    esp,0x54      ← b win landed here
+0x080491f6 <+0>:    endbr32
+0x080491fa <+4>:    push   ebp
+0x080491fb <+5>:    mov    ebp,esp
+0x080491fd <+7>:    push   ebx
+0x080491fe <+8>:    sub    esp,0x54      ← b win landed here
             </code></pre>
 
 
